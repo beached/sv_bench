@@ -12,8 +12,8 @@
 #include <string>
 #include <string_view>
 
-template<daw::string_view_bounds_type bounds_type>
-intmax_t test( daw::basic_string_view<char, bounds_type> sv ) {
+template<typename StringView>
+intmax_t test( StringView sv ) {
 	benchmark::DoNotOptimize( sv );
 	intmax_t result = 0;
 	while( not sv.empty( ) ) {
@@ -24,12 +24,12 @@ intmax_t test( daw::basic_string_view<char, bounds_type> sv ) {
 	return result;
 }
 
-intmax_t test_stdsv( std::string_view sv ) {
+template<typename StringView>
+intmax_t test2( StringView sv ) {
 	benchmark::DoNotOptimize( sv );
 	intmax_t result = 0;
-	while( not sv.empty( ) ) {
-		result += sv.front( );
-		sv.remove_prefix( 1 );
+	for( std::size_t n = 0; n < sv.size( ); ++n ) {
+		result += sv[n];
 		benchmark::DoNotOptimize( sv );
 	}
 	return result;
@@ -39,29 +39,46 @@ std::string gen_data( ) {
 	return std::string( 1'000'000'000ULL, 'a' );
 }
 
-static void TestPtrPtr( benchmark::State &state, std::string &&str ) {
+static void TestRemovePrefixPtrPtr( benchmark::State &state, std::string &&str ) {
 	for( auto _ : state ) {
-		test<daw::string_view_bounds_type::pointer>( { str } );
+		test<daw::string_view>( { str } );
 	}
 }
+BENCHMARK_CAPTURE( TestRemovePrefixPtrPtr, TestRemovePrefixPtrPtr, gen_data( ) );
 
-BENCHMARK_CAPTURE( TestPtrPtr, TestPtrPtr, gen_data( ) );
-
-static void TestPtrSizeT( benchmark::State &state, std::string &&str ) {
+static void TestRemovePrefixPtrSizeT( benchmark::State &state, std::string &&str ) {
 	for( auto _ : state ) {
-		test<daw::string_view_bounds_type::size>( { str } );
+		test<daw::basic_string_view<char, daw::string_view_bounds_type::size>>( { str } );
 	}
 }
-BENCHMARK_CAPTURE( TestPtrSizeT, TestPtrSizeT, gen_data( ) );
+BENCHMARK_CAPTURE( TestRemovePrefixPtrSizeT, TestRemovePrefixPtrSizeT, gen_data( ) );
 
-
-static void TestStdSV( benchmark::State &state, std::string &&str ) {
+static void TestRemovePrefixStdSV( benchmark::State &state, std::string &&str ) {
 	for( auto _ : state ) {
-		test_stdsv( { str } );
+		test<std::string_view>( std::string_view{ str } );
 	}
 }
-BENCHMARK_CAPTURE( TestStdSV, TestStdSV, gen_data( ) );
+BENCHMARK_CAPTURE( TestRemovePrefixStdSV, TestRemovePrefixStdSV, gen_data( ) );
 
+static void TestSizePtrPtr( benchmark::State &state, std::string &&str ) {
+	for( auto _ : state ) {
+		test2<daw::string_view>( { str } );
+	}
+}
+BENCHMARK_CAPTURE( TestSizePtrPtr, TestSizePtrPtr, gen_data( ) );
 
+static void TestSizePtrSizeT( benchmark::State &state, std::string &&str ) {
+	for( auto _ : state ) {
+		test2<daw::basic_string_view<char, daw::string_view_bounds_type::size>>( { str } );
+	}
+}
+BENCHMARK_CAPTURE( TestSizePtrSizeT, TestSizePtrSizeT, gen_data( ) );
+
+static void TestSizeStdSV( benchmark::State &state, std::string &&str ) {
+	for( auto _ : state ) {
+		test2<std::string_view>( std::string_view{ str } );
+	}
+}
+BENCHMARK_CAPTURE( TestSizeStdSV, TestSizeStdSV, gen_data( ) );
 
 BENCHMARK_MAIN( );
