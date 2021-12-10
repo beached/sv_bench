@@ -19,7 +19,6 @@ intmax_t test( StringView sv ) {
 	while( not sv.empty( ) ) {
 		result += sv.front( );
 		sv.remove_prefix( 1 );
-		benchmark::DoNotOptimize( sv );
 	}
 	return result;
 }
@@ -30,7 +29,6 @@ intmax_t test2( StringView sv ) {
 	intmax_t result = 0;
 	for( std::size_t n = 0; n < sv.size( ); ++n ) {
 		result += sv[n];
-		benchmark::DoNotOptimize( sv );
 	}
 	return result;
 }
